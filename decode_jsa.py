@@ -14,6 +14,9 @@ def peek_u16(buff, off):
 def peek_u32(buff, off):
     return struct.unpack("<I", buff[off:off+4])[0]
 
+def peek_f(buff, off):
+    return struct.unpack("<f", buff[off:off+4])[0]
+
 def read_u8(buff):
     ret = buff[0]
     del buff[0]
@@ -167,8 +170,117 @@ def decode_single(buff):
         print("")
         hexdump(buff)
         print("")
-    assert peek_u32(buff, 0x08) == 2
     print("Wavelength:", peek_u16(buff, 0x47))
+    # pop cal date stuff from earlier
+    buff = buff[8:]
+    assert read_u32(buff) == 2
+    """
+    Probe Resp: 1.827E+01 V/J @ 248 nm
+    val K: 18.274999618530273
+
+    j25lp-3a-050_0946e07.bin
+    
+    both of these the same:
+    j25lp-4_0437e03.bin
+    j8lp-1373_0953l05.bin
+    
+    hmm
+    """
+    vala = read_u32(buff)
+    #print("Cal:", read_f(buff))
+    print("val A:", vala, "/", hex(vala))
+
+    assert read_u32(buff) == 0
+
+    """
+    Seems to be float, but not sure what its for
+    doesn't match response value on cal sticker
+    
+    4.393999915919267e-06
+    2.5999999706982635e-05
+    7.789999654050916e-05
+    """
+    valb = read_u32(buff)
+    print("val B:", valb)
+
+    valc = read_u32(buff)
+    print("val C:", valc)
+
+    vald = read_u32(buff)
+    print("val D:", vald)
+
+    assert read_u32(buff) == 0
+    assert read_u32(buff) == 0
+
+    vale = read_f(buff)
+    print("val E:", vale)
+
+    valf = read_f(buff)
+    # print("val F:", valf)
+    assert valf == 100.0
+
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 0
+
+    valg = read_u32(buff)
+    print("val G:", valg)
+    # assert valg == 16256
+
+    assert read_u32(buff) == 0
+
+    valh = read_u32(buff)
+    # print("val H:", valh)
+    assert valh == 16672
+
+    vali = read_u32(buff)
+    print("val I:", vali)
+
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 1
+    assert read_u8(buff) == 1
+
+    nm = read_u16(buff)
+    print("nm:", nm)
+
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 1
+
+    assert read_u8(buff) == 1
+    assert read_u8(buff) == 1
+    assert read_u8(buff) == 1
+    assert read_u8(buff) == 1
+
+    # ****
+    # this is the main response value
+    valk = read_f(buff)
+    print("Probe Resp:", valk, "V/J")
+
+    assert read_u8(buff) == 1
+    assert read_u8(buff) == 1
+
+    vall = read_u32(buff)
+    print("val L:", vall)
+    # assert vall == 1929144582
+
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 1
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 1
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 0
+
+    valk = read_u32(buff)
+    print("val K:", valk)
+
+    assert read_u8(buff) == 0
+    assert read_u8(buff) == 0
+
 
 def read_struct(buff, format):
     n = struct.calcsize(format)
