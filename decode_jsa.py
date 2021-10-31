@@ -4,13 +4,24 @@ import argparse
 import struct
 from uvscada.util import hexdump
 
+def peek_u8(buff, off):
+    return buff[off]
+
+def peek_u16(buff, off):
+    return struct.unpack("<H", buff[off:off+2])[0]
+
+def peek_u32(buff, off):
+    return struct.unpack("<I", buff[off:off+4])[0]
+
 def read_u8(buff):
     ret = buff[0]
     del buff[0]
     return ret
 
-def peek_u16(buff, off):
-    return struct.unpack("<H", buff[off:off+2])[0]
+def read_u16(buff):
+    ret = struct.unpack("<H", buff[0:2])[0]
+    del buff[0:2]
+    return ret
 
 def read_u32(buff):
     ret = struct.unpack("<I", buff[0:4])[0]
@@ -18,7 +29,7 @@ def read_u32(buff):
     return ret
 
 def read_f(buff):
-    ret = struct.unpack(">f", buff[0:4])[0]
+    ret = struct.unpack("<f", buff[0:4])[0]
     del buff[0:4]
     return ret
 
@@ -137,20 +148,13 @@ def decode_single(buff):
     00001000
     """
 
-    # ''
-    # '0'
-    # '1027011'
-    print("Something: ", read_str(buff))
-    # Seems remainder is fixed size
-    print("Remain", len(buff))
     assert len(buff) == 105
 
     print("")
-    hexdump(buff)
+    # hexdump(buff)
     print("")
     print("Wavelength: ", peek_u16(buff, 0x47))
     print("Maybe: ", peek_u16(buff, 0x00))
-    # open("buff.bin", "wb").write(buff)
 
 def read_struct(buff, format):
     n = struct.calcsize(format)
@@ -214,46 +218,159 @@ def decode_multi(fn_in, buff):
     
     """
 
+    if 0:
+        print("")
+        hexdump(buff)
+    print("")
+
+    """
+    $ hexdump -C s10_0338h03.bin |head -n 2
+    00000000  19 30 00 00 6d 01 00 00  01 00 00 00 00 00 00 c8  |.0..m...........|
+    00000010  42 00 00 00 00 1c 00 00  00 01 3e c8 00 00 00 d2  |B.........>.....|
+    $ hexdump -C op-2-vis_219708.bin |head -n 2
+    00000000  1d 32 00 00 6d 01 00 00  01 00 00 00 00 00 00 80  |.2..m...........|
+    00000010  3f 00 00 00 00 10 00 00  00 01 2d 90 01 00 00 95  |?.........-.....|
+    $ hexdump -C op-2-ir_22045.bin |head -n 2
+    00000000  24 32 00 00 6d 01 00 00  01 00 00 00 00 00 00 00  |$2..m...........|
+    00000010  00 00 00 00 00 04 00 00  00 01 1e 20 03 00 00 34  |........... ...4|
+    $ hexdump -C op-2-vis_0158k12r.bin |head -n 2
+    00000000  29 3d 00 00 6d 01 00 00  01 00 00 00 00 00 00 80  |)=..m...........|
+    00000010  3f 00 00 00 00 10 00 00  00 01 2d 90 01 00 00 95  |?.........-.....|
+    """
+
+    print("val 0x00", peek_u32(buff, 0x00))
+    assert peek_u32(buff, 0x04) == 0x016D
+    assert peek_u32(buff, 0x08) == 1
+    assert peek_u8(buff, 0x0C) == 0
+    assert peek_u8(buff, 0x0D) == 0
+    assert peek_u8(buff, 0x0E) == 0
+    """
+    ++ ./decode_jsa.py eeprom/jsa/op-2-vis_0158k12r.bin
+    val 0x15 16
+    ++ ./decode_jsa.py eeprom/jsa/op-2-ir_22045.bin
+    val 0x15 4
+    ++ ./decode_jsa.py eeprom/jsa/s10_0338h03.bin
+    val 0x15 28
+    ++ ./decode_jsa.py eeprom/jsa/op-2-vis_219708.bin
+    val 0x15 16
+    """
+    print("val 0x15", peek_u8(buff, 0x15))
+    assert peek_u8(buff, 0x19) == 1
+
     # 200 to 1100 nm
     # 62 values => 3e
     # value just before this table
-    buff = bytearray(open(fn_in, "rb").read())
-    ncal = buff[0x2D]
+    # buff = bytearray(open(fn_in, "rb").read())
+    # 0x2D => 0x1A
+    ncal = buff[0x1A]
     print("entries", ncal)
     nms = []
-    buff = buff[0x2E:]
+    buff = buff[0x1B:]
     print("nms")
     for _cali in range(ncal):
-        nm, _x = read_struct(buff, "<HH")
-        print("  ", nm)
+        nm, x1 = read_struct(buff, "<HH")
+        assert x1 == 0
+        # print("  ", nm)
         nms.append(nm)
 
-    print("val", read_u8(buff))
-    print("val", read_u8(buff))
+    val_a = read_u8(buff)
+    assert val_a == 1, val_a
+    ncal2 = read_u8(buff)
+    assert ncal2 == ncal, ncal2
 
     print("second")
     val2s = []
     for _cali in range(ncal):
         val2 = read_u8(buff)
-        print("  ", val2)
-        val2s.append(nm)
+        """
+        s10_0338h03.bin: 1 or 2
+        op-2-ir_22045.bin: always 1
+        op-2-vis_0158k12r.bin: always 1
+        op-2-vis_219708.bin: always 1
+        """
+        assert val2 in (1, 2)
+        # print("  ", val2)
+        val2s.append(val2)
 
-    print("val", read_u8(buff))
-    print("val", read_u8(buff))
+    val_c = read_u8(buff)
+    assert val_c == 1, val_c
+    ncal3 = read_u8(buff)
+    assert ncal3 == ncal, ncal3
 
     # The two upper bytes are tracking each other
     # What about the lower two? Are they just noise?
     print("third")
     val3s = []
     for _cali in range(ncal):
-        val3 = read_u32(buff)
-        print("  ", val3)
-        val3s.append(nm)
+        # val3 = read_u32(buff)
+        val3 = read_f(buff)
+        """
+        Most sets this is below 0.5
+        op-2-ir_22045.bin however has some values approaching 1.0
+        """
+        assert 0.0 < val3 < 1.0
+        # print("  ", val3)
+        val3s.append(val3)
+        # print(hex(val3))
 
-    print("val", read_u8(buff))
-    print("val", read_u8(buff))
-    print("val", read_u8(buff))
-    print("val", read_u8(buff))
+    val_d = read_u8(buff)
+    assert val_d == 1, val_d
+    ncal4 = read_u8(buff)
+    assert ncal4 == ncal, ncal4
+
+    # Value seems to always be the same
+    # weird
+    print("fourth")
+    val4s = []
+    for _cali in range(ncal):
+        val4 = read_u32(buff)
+        val4s.append(val4)
+        # print(val4)
+
+    """
+    ++ ./decode_jsa.py eeprom/jsa/op-2-vis_0158k12r.bin
+    XXX00000000  00 01 00 01 00 00 00 3B  C6 00 00                 |.......;...     |
+    ++ ./decode_jsa.py eeprom/jsa/op-2-ir_22045.bin
+    XXX00000000  00 01 00 01 00 00 00 AB  68 00 00                 |........h..     |
+    ++ ./decode_jsa.py eeprom/jsa/s10_0338h03.bin
+    XXX00000000  00 01 00 01 00 00 00 61  BD 00 00                 |.......a...     |
+    ++ ./decode_jsa.py eeprom/jsa/op-2-vis_219708.bin
+    XXX00000000  00 01 00 01 00 00 00 EB  CA 00 00                 |...........     |
+    """
+    print("remain end", len(buff))
+    assert len(buff) == 11
+    
+    assert read_u8(buff) == 0x00
+    assert read_u8(buff) == 0x01
+    assert read_u8(buff) == 0x00
+    assert read_u8(buff) == 0x01
+    assert read_u8(buff) == 0x00
+    assert read_u8(buff) == 0x00
+    assert read_u8(buff) == 0x00
+
+    """
+    ++ ./decode_jsa.py eeprom/jsa/op-2-vis_0158k12r.bin
+    val F 50747
+    ++ ./decode_jsa.py eeprom/jsa/op-2-ir_22045.bin
+    val F 26795
+    ++ ./decode_jsa.py eeprom/jsa/s10_0338h03.bin
+    val F 48481
+    ++ ./decode_jsa.py eeprom/jsa/op-2-vis_219708.bin
+    val F 51947
+
+    >>> struct.unpack("<f", b"\x00\x00\x3B\xC6")
+    (-11968.0,)
+    >>> struct.unpack("<f", b"\x00\x3B\xC6\x00")
+    (1.8204593451287422e-38,)
+    >>> struct.unpack("<f", b"\x3B\xC6\x00\x00")
+    (7.111169316909149e-41,)
+    """
+    print("val F", read_u16(buff))
+    assert read_u16(buff) == 0
+
+    print("table (%s)" % ncal)
+    for nm, val2, val3, val4 in zip(nms, val2s, val3s, val4s):
+        print("  ", nm, val2, val3, val4)
 
 def run(fn_in):
     if 0:
@@ -279,6 +396,14 @@ def run(fn_in):
     model = read_str(buff)
     print("Model: %s" % model)
     print("S/N: %s" % read_str(buff))
+
+    # ''
+    # '0'
+    # '1027011'
+    print("Something: ", read_str(buff))
+    # Seems remainder is fixed size
+    print("Remain", len(buff))
+    open("buff.bin", "wb").write(buff)
 
     if cal_fmt == 2:
         decode_single(buff)
