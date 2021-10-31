@@ -37,6 +37,11 @@ def read_f(buff):
     del buff[0:4]
     return ret
 
+def read_debug_unk32(buff, label):
+    f = peek_f(buff, 0)
+    u32 = read_u32(buff)
+    print(label + ":", u32, "/", hex(u32), "/", f)
+
 def read_str_endi(buff, endi):
     ret = ""
     while True:
@@ -170,7 +175,7 @@ def decode_single(buff):
         print("")
         hexdump(buff)
         print("")
-    print("Wavelength:", peek_u16(buff, 0x47))
+    # print("Wavelength:", peek_u16(buff, 0x47))
     # pop cal date stuff from earlier
     buff = buff[8:]
     assert read_u32(buff) == 2
@@ -186,29 +191,12 @@ def decode_single(buff):
     
     hmm
     """
-    vala = read_u32(buff)
-    #print("Cal:", read_f(buff))
-    print("val A:", vala, "/", hex(vala))
-
+    # this whole group are probably floats
+    read_debug_unk32(buff,"val A")
     assert read_u32(buff) == 0
-
-    """
-    Seems to be float, but not sure what its for
-    doesn't match response value on cal sticker
-    
-    4.393999915919267e-06
-    2.5999999706982635e-05
-    7.789999654050916e-05
-    """
-    valb = read_u32(buff)
-    print("val B:", valb)
-
-    valc = read_u32(buff)
-    print("val C:", valc)
-
-    vald = read_u32(buff)
-    print("val D:", vald)
-
+    read_debug_unk32(buff,"val B")
+    read_debug_unk32(buff,"val C")
+    read_debug_unk32(buff,"val D")
     assert read_u32(buff) == 0
     assert read_u32(buff) == 0
 
@@ -223,9 +211,7 @@ def decode_single(buff):
     assert read_u8(buff) == 0
     assert read_u8(buff) == 0
 
-    valg = read_u32(buff)
-    print("val G:", valg)
-    # assert valg == 16256
+    read_debug_unk32(buff,"val G")
 
     assert read_u32(buff) == 0
 
@@ -233,8 +219,7 @@ def decode_single(buff):
     # print("val H:", valh)
     assert valh == 16672
 
-    vali = read_u32(buff)
-    print("val I:", vali)
+    read_debug_unk32(buff,"val I")
 
     assert read_u8(buff) == 0
     assert read_u8(buff) == 0
@@ -261,9 +246,7 @@ def decode_single(buff):
     assert read_u8(buff) == 1
     assert read_u8(buff) == 1
 
-    vall = read_u32(buff)
-    print("val L:", vall)
-    # assert vall == 1929144582
+    read_debug_unk32(buff,"val L")
 
     assert read_u8(buff) == 0
     assert read_u8(buff) == 1
@@ -275,8 +258,7 @@ def decode_single(buff):
     assert read_u8(buff) == 0
     assert read_u8(buff) == 0
 
-    valk = read_u32(buff)
-    print("val K:", valk)
+    read_debug_unk32(buff,"val K")
 
     assert read_u8(buff) == 0
     assert read_u8(buff) == 0
@@ -509,6 +491,7 @@ def decode_multi(fn_in, buff):
     >>> struct.unpack("<f", b"\x3B\xC6\x00\x00")
     (7.111169316909149e-41,)
     """
+    
     valf = read_u16(buff)
     print("val F:", valf, "/", hex(valf))
     assert read_u16(buff) == 0
@@ -518,13 +501,15 @@ def decode_multi(fn_in, buff):
         print("  ", nm, val2, val3, val4)
 
 def run(fn_in):
+    print("")
+    print("Reading", fn_in)
     if 0:
         float_test(fn_in)
         return
 
     buff = bytearray(open(fn_in, "rb").read())
     l = read_u32(buff)
-    print("Bytes: %u" % l)
+    # print("Bytes: %u" % l)
     # 4 bytes already consumed
     buff = buff[0:l - 4]
     cal_fmt = read_u8(buff)
