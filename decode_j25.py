@@ -1,5 +1,33 @@
 #!/usr/bin/env python3
 """
+File for single wavelength correction
+All of these are J25 probes
+
+https://microwiki.org/wiki/index.php/Molectron
+
+
+j25lp-3a-050_0946e07.bin
+    Peter
+    Label
+        Unknown
+j25lp-4_0437e03.bin
+    McMaster
+    BNC adapter
+    Label
+        1.827E+01 V/J
+        248 nm
+        12/08/08
+    3sigma
+        1.828e+1 V/J
+        248 nm
+jsa-bnc_0953l05_1778c06.bin
+    Peter
+    Label
+        Unknown
+
+
+
+
 Responsivity
 1.828e+1 V/J
 Cal: 248 nm
@@ -48,11 +76,15 @@ Probe Cal Date Dec 8 2008
 
 import argparse
 import struct
+from uvscada.util import hexdump
 
 def read_u8(buff):
     ret = buff[0]
     del buff[0]
     return ret
+
+def peek_u16(buff, off):
+    return struct.unpack("<H", buff[off:off+2])[0]
 
 def read_u32(buff):
     ret = struct.unpack("<I", buff[0:4])[0]
@@ -108,17 +140,39 @@ def run(fn_in):
         float_test(fn_in)
         return
 
-
-
     buff = bytearray(open(fn_in, "rb").read())
     l = read_u32(buff)
     print("Bytes: %u" % l)
     # 4 bytes already consumed
     buff = buff[0:l - 4]
-    print("unknown", read_u8(buff))
+    cal_fmt = read_u8(buff)
+    """
+    2: J25
+        not wavelength corrected
+    3: OP-2, S10
+        wavelength corrected?
+    """
+    cal_fmt2str = {
+        2: "SINGLE",
+        3: "MULTI"}
+    print("Calibration format: %u (%s)" % (cal_fmt, cal_fmt2str[cal_fmt]))
     model = read_str(buff)
     print("Model: %s" % model)
     print("S/N: %s" % read_str(buff))
+
+    # ''
+    # '0'
+    # '1027011'
+    print("Something", read_str(buff))
+    # Seems remainder is fixed size
+    print("Remain", len(buff))
+    assert len(buff) == 105
+
+    print("")
+    hexdump(buff)
+    print("")
+    print("Wavelength: ", peek_u16(buff, 0x47))
+    
 
 def main():
     parser = argparse.ArgumentParser(
