@@ -5,42 +5,52 @@ import struct
 from uvscada.util import hexdump
 import datetime
 
+
 def peek_u8(buff, off):
     return buff[off]
 
+
 def peek_u16(buff, off):
-    return struct.unpack("<H", buff[off:off+2])[0]
+    return struct.unpack("<H", buff[off:off + 2])[0]
+
 
 def peek_u32(buff, off):
-    return struct.unpack("<I", buff[off:off+4])[0]
+    return struct.unpack("<I", buff[off:off + 4])[0]
+
 
 def peek_f(buff, off):
-    return struct.unpack("<f", buff[off:off+4])[0]
+    return struct.unpack("<f", buff[off:off + 4])[0]
+
 
 def read_u8(buff):
     ret = buff[0]
     del buff[0]
     return ret
 
+
 def read_u16(buff):
     ret = struct.unpack("<H", buff[0:2])[0]
     del buff[0:2]
     return ret
+
 
 def read_u32(buff):
     ret = struct.unpack("<I", buff[0:4])[0]
     del buff[0:4]
     return ret
 
+
 def read_f(buff):
     ret = struct.unpack("<f", buff[0:4])[0]
     del buff[0:4]
     return ret
 
+
 def read_debug_unk32(buff, label):
     f = peek_f(buff, 0)
     u32 = read_u32(buff)
     print(label + ":", u32, "/", hex(u32), "/", f)
+
 
 def read_str_endi(buff, endi):
     ret = ""
@@ -51,6 +61,7 @@ def read_str_endi(buff, endi):
             return ret
         c = chr(i)
         ret += c
+
 
 def read_str(buff):
     """
@@ -64,15 +75,16 @@ def read_str(buff):
         del buff[0]
     return ret
 
+
 def float_test(fn_in):
     # ./decode_j25.py j25lp-4_0437e03.bin |grep 828
     # nope
-    
+
     for i in range(0x100):
         print("")
         print(i)
         buff = bytearray(open(fn_in, "rb").read())
-        
+
         buff = buff[i:]
         print("%f" % struct.unpack("<e", buff[0:2])[0])
         print("%f" % struct.unpack(">e", buff[0:2])[0])
@@ -80,6 +92,7 @@ def float_test(fn_in):
         print("%f" % struct.unpack(">f", buff[0:4])[0])
         print("%f" % struct.unpack("<d", buff[0:8])[0])
         print("%f" % struct.unpack(">d", buff[0:8])[0])
+
 
 def decode_single(buff):
     """
@@ -192,11 +205,11 @@ def decode_single(buff):
     hmm
     """
     # this whole group are probably floats
-    read_debug_unk32(buff,"val A")
+    read_debug_unk32(buff, "val A")
     assert read_u32(buff) == 0
-    read_debug_unk32(buff,"val B")
-    read_debug_unk32(buff,"val C")
-    read_debug_unk32(buff,"val D")
+    read_debug_unk32(buff, "val B")
+    read_debug_unk32(buff, "val C")
+    read_debug_unk32(buff, "val D")
     assert read_u32(buff) == 0
     assert read_u32(buff) == 0
 
@@ -211,7 +224,7 @@ def decode_single(buff):
     assert read_u8(buff) == 0
     assert read_u8(buff) == 0
 
-    read_debug_unk32(buff,"val G")
+    read_debug_unk32(buff, "val G")
 
     assert read_u32(buff) == 0
 
@@ -219,7 +232,7 @@ def decode_single(buff):
     # print("val H:", valh)
     assert valh == 16672
 
-    read_debug_unk32(buff,"val I")
+    read_debug_unk32(buff, "val I")
 
     assert read_u8(buff) == 0
     assert read_u8(buff) == 0
@@ -246,7 +259,7 @@ def decode_single(buff):
     assert read_u8(buff) == 1
     assert read_u8(buff) == 1
 
-    read_debug_unk32(buff,"val L")
+    read_debug_unk32(buff, "val L")
 
     assert read_u8(buff) == 0
     assert read_u8(buff) == 1
@@ -258,7 +271,7 @@ def decode_single(buff):
     assert read_u8(buff) == 0
     assert read_u8(buff) == 0
 
-    read_debug_unk32(buff,"val K")
+    read_debug_unk32(buff, "val K")
 
     assert read_u8(buff) == 0
     assert read_u8(buff) == 0
@@ -269,6 +282,7 @@ def read_struct(buff, format):
     ret = struct.unpack(format, buff[0:n])
     del buff[0:n]
     return ret
+
 
 def decode_multi(fn_in, buff):
     """
@@ -348,7 +362,6 @@ def decode_multi(fn_in, buff):
         print("")
         hexdump(buff)
         print("")
-
     """
     $ hexdump -C s10_0338h03.bin |head -n 2
     00000000  19 30 00 00 6d 01 00 00  01 00 00 00 00 00 00 c8  |.0..m...........|
@@ -452,7 +465,6 @@ def decode_multi(fn_in, buff):
         val4 = read_u32(buff)
         val4s.append(val4)
         # print(val4)
-
     """
     ++ ./decode_jsa.py eeprom/jsa/op-2-vis_0158k12r.bin
     XXX00000000  00 01 00 01 00 00 00 3B  C6 00 00                 |.......;...     |
@@ -465,15 +477,14 @@ def decode_multi(fn_in, buff):
     """
     # print("remain end", len(buff))
     assert len(buff) == 11
-    
-    assert read_u8(buff) == 0x00
-    assert read_u8(buff) == 0x01
-    assert read_u8(buff) == 0x00
-    assert read_u8(buff) == 0x01
-    assert read_u8(buff) == 0x00
-    assert read_u8(buff) == 0x00
-    assert read_u8(buff) == 0x00
 
+    assert read_u8(buff) == 0x00
+    assert read_u8(buff) == 0x01
+    assert read_u8(buff) == 0x00
+    assert read_u8(buff) == 0x01
+    assert read_u8(buff) == 0x00
+    assert read_u8(buff) == 0x00
+    assert read_u8(buff) == 0x00
     """
     ++ ./decode_jsa.py eeprom/jsa/op-2-vis_0158k12r.bin
     val F 50747
@@ -491,7 +502,7 @@ def decode_multi(fn_in, buff):
     >>> struct.unpack("<f", b"\x3B\xC6\x00\x00")
     (7.111169316909149e-41,)
     """
-    
+
     valf = read_u16(buff)
     print("val F:", valf, "/", hex(valf))
     assert read_u16(buff) == 0
@@ -499,6 +510,7 @@ def decode_multi(fn_in, buff):
     print("table (%s)" % ncal)
     for nm, val2, val3, val4 in zip(nms, val2s, val3s, val4s):
         print("  ", nm, val2, val3, val4)
+
 
 def run(fn_in):
     print("")
@@ -519,9 +531,7 @@ def run(fn_in):
     3: OP-2, S10
         wavelength corrected?
     """
-    cal_fmt2str = {
-        2: "SINGLE",
-        3: "MULTI"}
+    cal_fmt2str = {2: "SINGLE", 3: "MULTI"}
     print("Calibration format: %u (%s)" % (cal_fmt, cal_fmt2str[cal_fmt]))
     model = read_str(buff)
     print("Model: %s" % model)
@@ -536,7 +546,8 @@ def run(fn_in):
     # open("buff.bin", "wb").write(buff)
 
     cal_days_1970 = peek_u32(buff, 0x00)
-    cal_dt = datetime.datetime(1970,1,1) + datetime.timedelta(days=cal_days_1970)
+    cal_dt = datetime.datetime(1970, 1,
+                               1) + datetime.timedelta(days=cal_days_1970)
     print("Cal date", cal_dt.strftime('%Y-%m-%d'))
     # 0x16D => 365
     # hmm date related? Expiration days?
@@ -554,11 +565,11 @@ def run(fn_in):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Decode')
+    parser = argparse.ArgumentParser(description='Decode')
     parser.add_argument('fn_in', help='File name in')
     args = parser.parse_args()
     run(fn_in=args.fn_in)
+
 
 if __name__ == "__main__":
     main()

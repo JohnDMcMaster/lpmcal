@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """
 Sample file:
 
@@ -40,10 +39,10 @@ dumping EEPROM
 038: 03e8 ffff ffff ffff  ffff ffff ffff 3858  |  1000     -1     -1     -1     -1     -1     -1  14424 |
 """
 
-
 import argparse
 import struct
 import re
+
 
 def parse_curly_block(fn_in):
     f_in = open(fn_in, "r")
@@ -80,9 +79,11 @@ def parse_curly_block(fn_in):
             break
     return ret
 
+
 def parse_hexdump_block(fn_in):
     f_in = open(fn_in, "r")
     assert 0
+
 
 def run(fn_in, fn_out):
     print("Reading", fn_in)
@@ -91,9 +92,9 @@ def run(fn_in, fn_out):
     f_out = open(fn_out, "wb")
     f_out.write(buff_curly)
 
+
 def main():
-    parser = argparse.ArgumentParser(
-        description='Decode')
+    parser = argparse.ArgumentParser(description='Decode')
     parser.add_argument('fn_in', help='File name in')
     parser.add_argument('fn_out', nargs='?', help='File name in')
     args = parser.parse_args()
@@ -102,6 +103,7 @@ def main():
         fn_out = args.fn_in.replace('.txt', '.bin')
         assert fn_out != args.fn_in
     run(fn_in=args.fn_in, fn_out=fn_out)
+
 
 if __name__ == "__main__":
     main()
