@@ -3,6 +3,7 @@
 import argparse
 import struct
 from uvscada.util import hexdump
+import datetime
 
 def peek_u8(buff, off):
     return buff[off]
@@ -130,8 +131,20 @@ def decode_single(buff):
         
         8d 37
         ?
-    
-    
+
+    0x378d/365
+    38.961643835616435
+    ugh
+    351 remainder...
+    Around Dec 16
+    but maybe some rounding error there with leap years? messy
+    so...1970 epoch
+
+    (datetime.datetime(2008,12,8) - datetime.datetime(1970,1,1)).days
+    14221
+    0x378d
+    yep! but ugh
+
     00000000  7f 00 00 00 02 07 4a 32  35 4c 50 2d 34 07 30 34  |......J25LP-4.04|
     00000010  33 37 45 30 33 00 8d 37  00 00 6d 01 00 00 02 00  |37E03..7..m.....|
     00000020  00 00 06 69 fc 72 00 00  00 00 93 1a da 37 83 a5  |...i.r.......7..|
@@ -150,11 +163,12 @@ def decode_single(buff):
 
     assert len(buff) == 105
 
-    print("")
-    # hexdump(buff)
-    print("")
-    print("Wavelength: ", peek_u16(buff, 0x47))
-    print("Maybe: ", peek_u16(buff, 0x00))
+    if 0:
+        print("")
+        hexdump(buff)
+        print("")
+    assert peek_u32(buff, 0x08) == 2
+    print("Wavelength:", peek_u16(buff, 0x47))
 
 def read_struct(buff, format):
     n = struct.calcsize(format)
@@ -166,6 +180,24 @@ def decode_multi(fn_in, buff):
     """
     Probe Resp: 2.570E-1 A/W @ 514 nm
     Probe Cal Date Sep 10 2003
+
+    extract ok!
+    514 1 0.25699999928474426 1065353216
+
+    one of these has to be the cal date
+
+    val 0x00 12313
+        0x3019
+        48
+        25
+    val 0x15 28
+        0x1c
+    val F 48481
+        0xbd61
+        189
+        97
+
+
     
     
     mcmaster@necropolis:~/doc/ext/molectron$ hexdump -C out.bin
@@ -221,7 +253,7 @@ def decode_multi(fn_in, buff):
     if 0:
         print("")
         hexdump(buff)
-    print("")
+        print("")
 
     """
     $ hexdump -C s10_0338h03.bin |head -n 2
@@ -238,8 +270,8 @@ def decode_multi(fn_in, buff):
     00000010  3f 00 00 00 00 10 00 00  00 01 2d 90 01 00 00 95  |?.........-.....|
     """
 
-    print("val 0x00", peek_u32(buff, 0x00))
-    assert peek_u32(buff, 0x04) == 0x016D
+    # print("val 0x00:", peek_u32(buff, 0x00), "/", hex(peek_u32(buff, 0x00)))
+    # assert peek_u32(buff, 0x04) == 0x016D
     assert peek_u32(buff, 0x08) == 1
     assert peek_u8(buff, 0x0C) == 0
     assert peek_u8(buff, 0x0D) == 0
@@ -254,7 +286,7 @@ def decode_multi(fn_in, buff):
     ++ ./decode_jsa.py eeprom/jsa/op-2-vis_219708.bin
     val 0x15 16
     """
-    print("val 0x15", peek_u8(buff, 0x15))
+    print("val 0x15:", peek_u8(buff, 0x15))
     assert peek_u8(buff, 0x19) == 1
 
     # 200 to 1100 nm
@@ -263,10 +295,10 @@ def decode_multi(fn_in, buff):
     # buff = bytearray(open(fn_in, "rb").read())
     # 0x2D => 0x1A
     ncal = buff[0x1A]
-    print("entries", ncal)
+    # print("entries", ncal)
     nms = []
     buff = buff[0x1B:]
-    print("nms")
+    # print("nms")
     for _cali in range(ncal):
         nm, x1 = read_struct(buff, "<HH")
         assert x1 == 0
@@ -278,7 +310,7 @@ def decode_multi(fn_in, buff):
     ncal2 = read_u8(buff)
     assert ncal2 == ncal, ncal2
 
-    print("second")
+    # print("second")
     val2s = []
     for _cali in range(ncal):
         val2 = read_u8(buff)
@@ -299,7 +331,7 @@ def decode_multi(fn_in, buff):
 
     # The two upper bytes are tracking each other
     # What about the lower two? Are they just noise?
-    print("third")
+    # print("third")
     val3s = []
     for _cali in range(ncal):
         # val3 = read_u32(buff)
@@ -320,7 +352,7 @@ def decode_multi(fn_in, buff):
 
     # Value seems to always be the same
     # weird
-    print("fourth")
+    # print("fourth")
     val4s = []
     for _cali in range(ncal):
         val4 = read_u32(buff)
@@ -337,7 +369,7 @@ def decode_multi(fn_in, buff):
     ++ ./decode_jsa.py eeprom/jsa/op-2-vis_219708.bin
     XXX00000000  00 01 00 01 00 00 00 EB  CA 00 00                 |...........     |
     """
-    print("remain end", len(buff))
+    # print("remain end", len(buff))
     assert len(buff) == 11
     
     assert read_u8(buff) == 0x00
@@ -365,7 +397,8 @@ def decode_multi(fn_in, buff):
     >>> struct.unpack("<f", b"\x3B\xC6\x00\x00")
     (7.111169316909149e-41,)
     """
-    print("val F", read_u16(buff))
+    valf = read_u16(buff)
+    print("val F:", valf, "/", hex(valf))
     assert read_u16(buff) == 0
 
     print("table (%s)" % ncal)
@@ -402,8 +435,18 @@ def run(fn_in):
     # '1027011'
     print("Something: ", read_str(buff))
     # Seems remainder is fixed size
-    print("Remain", len(buff))
-    open("buff.bin", "wb").write(buff)
+    # print("Remain", len(buff))
+    # open("buff.bin", "wb").write(buff)
+
+    cal_days_1970 = peek_u32(buff, 0x00)
+    cal_dt = datetime.datetime(1970,1,1) + datetime.timedelta(days=cal_days_1970)
+    print("Cal date", cal_dt.strftime('%Y-%m-%d'))
+    # 0x16D => 365
+    # hmm date related? Expiration days?
+    cal_due_days = peek_u32(buff, 0x04)
+    assert cal_due_days == 0x016D
+    cal_due_dt = cal_dt + datetime.timedelta(days=cal_due_days)
+    print("Cal due", cal_due_dt.strftime('%Y-%m-%d'))
 
     if cal_fmt == 2:
         decode_single(buff)
