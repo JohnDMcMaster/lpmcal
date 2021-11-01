@@ -52,15 +52,10 @@ def read_debug_unk32(buff, label):
     print(label + ":", u32, "/", hex(u32), "/", f)
 
 
-def read_str_endi(buff, endi):
-    ret = ""
-    while True:
-        i = buff[0]
-        del buff[0]
-        if i == endi:
-            return ret
-        c = chr(i)
-        ret += c
+def peek_debug_unk32(buff, label):
+    f = peek_f(buff, 0)
+    u32 = peek_u32(buff, 0)
+    print(label + ":", u32, "/", hex(u32), "/", f)
 
 
 def read_str(buff):
@@ -462,7 +457,10 @@ def decode_multi(fn_in, buff):
     # print("fourth")
     val4s = []
     for _cali in range(ncal):
-        val4 = read_u32(buff)
+        # XXX: 1065353216 / 0x3f800000 / 1.0
+        # peek_debug_unk32(buff, "XXX")
+
+        val4 = read_f(buff)
         val4s.append(val4)
         # print(val4)
     """
