@@ -50,6 +50,29 @@ def read_debug_unk32(buff, label):
     f = peek_f(buff, 0)
     u32 = read_u32(buff)
     print(label + ":", u32, "/", hex(u32), "/", f)
+    return u32
+
+def read_debug_u8(buff, label):
+    u8 = read_u8(buff)
+    print(label + ":", u8, "/", hex(u8))
+    return u8
+
+def read_debug_u16(buff, label):
+    u16 = read_u16(buff)
+    print(label + ":", u16, "/", hex(u16))
+    return u16
+
+
+def read_debug_u32(buff, label):
+    u32 = read_u32(buff)
+    print(label + ":", u32, "/", hex(u32))
+    return u32
+
+
+def read_debug_f(buff, label):
+    f = read_f(buff)
+    print(label + ":", f)
+    return f
 
 
 def peek_debug_unk32(buff, label):
@@ -88,105 +111,145 @@ def float_test(fn_in):
         print("%f" % struct.unpack("<d", buff[0:8])[0])
         print("%f" % struct.unpack(">d", buff[0:8])[0])
 
-
-def decode_single(buff):
+def decode_pyro_single_prefix(buff, verbose=False):
     """
-    File for single wavelength correction
-    All of these are J25 probes
-    
-    https://microwiki.org/wiki/index.php/Molectron
-    
-    
-    j25lp-3a-050_0946e07.bin
-        Peter
-        Label
-            Unknown
+    Think this is shared structure but not sure
+    """
+
+    verbose and hexdump(buff[0:38 + 16 + 4])
+
+    verbose and print("prefix")
+
+    read_debug_f(buff, "sprefix-0")
+
+    """
+    eeprom/jsa/j-25mb-he_0984e07r.bin
+    sprefix-A: 0.0005000000237487257
+    sprefix-B: 4.8000001697801054e-05
+    sprefix-C: 0.00018099999579135329
+    sprefix-D: 9.100000170292333e-05
+    sprefix-G: 22.299999237060547
+    sprefix-F: 100.0
+
+    eeprom/jsa/j25lp-4_0437e03.bin
+    sprefix-A: 0.0
+    sprefix-B: 2.5999999706982635e-05
+    sprefix-C: 0.00017800000205170363
+    sprefix-D: 8.900000102585182e-05
+    sprefix-G: 24.0
+    sprefix-F: 100.0
+    """
+    # float, 0.0005
+    read_debug_f(buff, "sprefix-A")
+    # Probalby float
+    read_debug_f(buff, "sprefix-B")
+    # Probalby float
+    read_debug_f(buff, "sprefix-C")
+    # Probalby float
+    read_debug_f(buff, "sprefix-D")
+
+
+    assert read_u32(buff) == 0
+    assert read_u32(buff) == 0
+    # 22.3
+    read_debug_f(buff, "sprefix-G")
+
+    assert read_debug_f(buff, "sprefix-F") == 100.0
+    assert read_u16(buff) == 0
+
+    """
+    eeprom/jsa/j25lp-3a-050_0946e07.bin
+    sprefix-12: 16256 / 0x3f80
+    sprefix-13: 0 / 0x0 / 0.0
+    sprefix-14: 16672 / 0x4120
+    sprefix-15: 17530 / 0x447a
+    sprefix-16: 0 / 0x0
+
+    eeprom/jsa/j25lp-4_0437e03.bin
+    sprefix-12: 0 / 0x0
+    sprefix-13: 0 / 0x0 / 0.0
+    sprefix-14: 16672 / 0x4120
+    sprefix-15: 17530 / 0x447a
+    sprefix-16: 0 / 0x0
+
+    eeprom/jsa/j-25mb-he_0984e07r.bin
+    sprefix-12: 0 / 0x0
+    sprefix-13: 0 / 0x0 / 0.0
+    sprefix-14: 16672 / 0x4120
+    sprefix-15: 0 / 0x0
+    sprefix-16: 10 / 0xa
+    """
+
+    assert read_u8(buff) == 0
+    # Sometimes 0, sometimes value
+    # sprefix-2: 16256 / 0x3f80
+    read_debug_u32(buff, "sprefix-12")
+    assert read_debug_unk32(buff, "sprefix-13") == 0
+
+    assert read_debug_u32(buff, "sprefix-14") == 0x4120
+    # observed: 0, large value
+    read_debug_u16(buff, "sprefix-15")
+    read_debug_u32(buff, "sprefix-16")
+    assert read_u8(buff) == 1
+
+def decode_pyro_single_postfix(buff, verbose=False):
+    verbose and print("remain end", len(buff))
+    assert len(buff) == 15
+
+    verbose and hexdump(buff)
+
+    """
+    00000000  00 01 00 01 00 00 00 00  00 80 3F 1C B0 00 00     |..........?.... |
+    00000000  00 01 00 01 00 00 00 00  00 80 3F D5 14 00 00     |..........?.... |
+    """
+
+    assert read_u8(buff) == 0x00
+    assert read_u8(buff) == 0x01
+    assert read_u8(buff) == 0x00
+    assert read_u8(buff) == 0x01
+    assert read_u8(buff) == 0x00
+    assert read_u8(buff) == 0x00
+    assert read_u8(buff) == 0x00
+
+    assert read_u16(buff) == 0
+    read_debug_u16(buff, "spostfix 8")
+    read_debug_u16(buff, "spostfix 9")
+    assert read_u16(buff) == 0
+
+
+def decode_pyro_single(buff, verbose=False):
+    """
+    About 64 bytes to nm bit
+    use this as rough comparison to other sections
+
     j25lp-4_0437e03.bin
-        McMaster
-        BNC adapter
-        Label
-            1.827E+01 V/J
-            248 nm
-            12/08/08
-        3sigma
-            1.828e+1 V/J
-            248 nm
-    jsa-bnc_0953l05_1778c06.bin
-        Peter
-        Label
-            Unknown
-    
-    
-    
-    
-    Responsivity
-    1.828e+1 V/J
-    Cal: 248 nm
-    
-    COHERENT
-    Model: J25LP-4
-    
-    COHERENT CALIBRATION TAG
-    DATE CALIB 12/08/08
-    TECH KH
-    NEXT DUE 12/08/09
-    Item #: 0010-8145
-    Serial #: 0437E03
-    
-    
-    
-    
-    Probe Resp: 1.827E+01 V/J @ 248 nm
-        248 => f8
-        appears once below
-        
-        what about Q format?
-    
-    Probe Cal Date Dec 8 2008
-        2008 => 0x7d8
-        
-        8d 37
-        ?
+    00000000  02 00 00 00 06 69 FC 72  00 00 00 00 93 1A DA 37  |.....i.r.......7|
+    00000010  83 A5 3A 39 83 A5 BA 38  00 00 00 00 00 00 00 00  |..:9...8........|
+    00000020  00 00 C0 41 00 00 C8 42  00 00 00 00 00 00 00 00  |...A...B........|
+    00000030  00 00 00 20 41 00 00 7A  44 00 00 00 00 01 01 F8  |... A..zD.......|
 
-    0x378d/365
-    38.961643835616435
-    ugh
-    351 remainder...
-    Around Dec 16
-    but maybe some rounding error there with leap years? messy
-    so...1970 epoch
+    j25lp-3a-050_0946e07.bin
+    00000000  02 00 00 00 42 60 E5 3B  00 00 00 00 2C 70 93 36  |....B`.;....,p.6|
+    00000010  99 06 0F 39 99 06 8F 38  00 00 00 00 00 00 00 00  |...9...8........|
+    00000020  9A 99 B1 41 00 00 C8 42  00 00 00 80 3F 00 00 00  |...A...B....?...|
+    00000030  00 00 00 20 41 00 00 7A  44 00 00 00 00 01 01 14  |... A..zD.......|
 
-    (datetime.datetime(2008,12,8) - datetime.datetime(1970,1,1)).days
-    14221
-    0x378d
-    yep! but ugh
+    j8lp-1373_0953l05.bin
+    00000000  02 00 00 00 06 69 FC 72  00 00 00 00 3E 5E A3 38  |.....i.r....>^.8|
+    00000010  4B 78 1D 3A 95 71 9D 39  00 00 00 00 00 00 00 00  |Kx.:.q.9........|
+    00000020  CD CC B8 41 00 00 C8 42  00 00 00 80 3F 00 00 00  |...A...B....?...|
+    00000030  00 00 00 20 41 00 00 A6  43 00 00 00 00 01 01 28  |... A...C......(|
 
-    00000000  7f 00 00 00 02 07 4a 32  35 4c 50 2d 34 07 30 34  |......J25LP-4.04|
-    00000010  33 37 45 30 33 00 8d 37  00 00 6d 01 00 00 02 00  |37E03..7..m.....|
-    00000020  00 00 06 69 fc 72 00 00  00 00 93 1a da 37 83 a5  |...i.r.......7..|
-    00000030  3a 39 83 a5 ba 38 00 00  00 00 00 00 00 00 00 00  |:9...8..........|
-    00000040  c0 41 00 00 c8 42 00 00  00 00 00 00 00 00 00 00  |.A...B..........|
-    00000050  00 20 41 00 00 7a 44 00  00 00 00 01 01 f8 00 00  |. A..zD.........|
-    00000060  00 01 01 01 01 01 33 33  92 41 01 01 dd 2e fc 72  |......33.A.....r|
-    00000070  00 01 00 01 00 00 00 00  00 80 3f d5 14 00 00 ff  |..........?.....|
-    00000080  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
-    *
-    00000f90  ff ff ff ff ff ff ff ff  ff ff ff 0f ff ff ff ff  |................|
-    00000fa0  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
-    *
-    00001000
     """
+    # s0 = len(buff)
+    # hexdump(buff[0:64])
 
-    assert len(buff) == 105
+    assert len(buff) == 93, len(buff)
 
     if 0:
         print("")
         hexdump(buff)
         print("")
-    # print("Wavelength:", peek_u16(buff, 0x47))
-    # pop cal date stuff from earlier
-    buff = buff[8:]
-    assert read_u32(buff) == 2
     """
     Probe Resp: 1.827E+01 V/J @ 248 nm
     val K: 18.274999618530273
@@ -199,77 +262,70 @@ def decode_single(buff):
     
     hmm
     """
-    # this whole group are probably floats
-    read_debug_unk32(buff, "val A")
-    assert read_u32(buff) == 0
-    read_debug_unk32(buff, "val B")
-    read_debug_unk32(buff, "val C")
-    read_debug_unk32(buff, "val D")
-    assert read_u32(buff) == 0
-    assert read_u32(buff) == 0
 
-    vale = read_f(buff)
-    print("val E:", vale)
+    def decode_main():
+        assert read_u8(buff) == 1
+    
+        # Roughly this is where previous tables end
+        # lets check before here
+    
+        # print("single: consumed %u bytes" % (s0 - len(buff)))
+    
+        nm = read_u16(buff)
+        print("nm:", nm)
+    
+        assert read_u8(buff) == 0
+        assert read_u8(buff) == 0
+        assert read_u8(buff) == 1
+    
+        assert read_u8(buff) == 1
+        assert read_u8(buff) == 1
+        assert read_u8(buff) == 1
+        assert read_u8(buff) == 1
+    
+        # ****
+        # this is the main response value
+        valk = read_f(buff)
+        print("Probe Resp:", valk, "V/J")
+    
+        assert read_u8(buff) == 1
+        assert read_u8(buff) == 1
+        read_debug_unk32(buff, "val L")
 
-    valf = read_f(buff)
-    # print("val F:", valf)
-    assert valf == 100.0
+    decode_pyro_single_prefix(buff, verbose=verbose)
+    decode_main()
+    decode_pyro_single_postfix(buff, verbose=verbose)
 
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 0
 
-    read_debug_unk32(buff, "val G")
+def decode_pyro_multi(buff):
+    """
+    Table header: 62 bytes
+    This is way bigger than multi1
+    It is plausibly the same format as the single header, but I haven't matched it yet
+    However the table itself is similar
+    Ex: 20 41 appears in both
 
-    assert read_u32(buff) == 0
+    j-25mb-he_0984e07r.bin
+    00000000  02 00 00 00 00 00 80 3F  6F 12 03 3A 9C 53 49 38  |.......?o..:.SI8|
+    00000010  D1 CA 3D 39 41 D7 BE 38  00 00 00 00 00 00 00 00  |..=9A..8........|
+    00000020  66 66 B2 41 00 00 C8 42  00 00 00 00 00 00 00 00  |ff.A...B........|
+    00000030  00 00 00 20 41 00 00 00  00 0A 00 00 00 01        |... A.........  |
+    """
 
-    valh = read_u32(buff)
-    # print("val H:", valh)
-    assert valh == 16672
+    # hexdump(buff[0:62])
 
-    read_debug_unk32(buff, "val I")
+    # s0 = len(buff)
 
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 1
-    assert read_u8(buff) == 1
-
-    nm = read_u16(buff)
-    print("nm:", nm)
-
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 1
-
-    assert read_u8(buff) == 1
-    assert read_u8(buff) == 1
-    assert read_u8(buff) == 1
-    assert read_u8(buff) == 1
-
-    # ****
-    # this is the main response value
-    valk = read_f(buff)
-    print("Probe Resp:", valk, "V/J")
-
-    assert read_u8(buff) == 1
-    assert read_u8(buff) == 1
-
-    read_debug_unk32(buff, "val L")
-
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 1
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 1
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 0
-
-    read_debug_unk32(buff, "val K")
-
-    assert read_u8(buff) == 0
-    assert read_u8(buff) == 0
+    decode_pyro_single_prefix(buff)
+    cals = read_multi_tables(buff)
+    decode_pyro_single_postfix(buff)
+    
+    print("table (%s)" % len(cals))
+    for nm, val2, val3, val4 in cals:
+        print("  ", nm, val2, val3, val4)
+        # Widest range observed: 193 nm to 14 um
+        assert 10 < nm < 50000
+        assert 0.0 < val3 < 10.0
 
 
 def read_struct(buff, format):
@@ -279,151 +335,22 @@ def read_struct(buff, format):
     return ret
 
 
-def decode_multi(fn_in, buff):
-    """
-    Probe Resp: 2.570E-1 A/W @ 514 nm
-    Probe Cal Date Sep 10 2003
+def read_multi_tables(buff):
+    ncal = read_u8(buff)
 
-    extract ok!
-    514 1 0.25699999928474426 1065353216
-
-    one of these has to be the cal date
-
-    val 0x00 12313
-        0x3019
-        48
-        25
-    val 0x15 28
-        0x1c
-    val F 48481
-        0xbd61
-        189
-        97
-
-
-    
-    
-    mcmaster@necropolis:~/doc/ext/molectron$ hexdump -C out.bin
-    00000000  65 03 00 00 03 03 53 31  30 07 30 33 33 38 48 30  |e.....S10.0338H0|
-    00000010  33 01 30 19 30 00 00 6d  01 00 00 01 00 00 00 00  |3.0.0..m........|
-    00000020  00 00 c8 42 00 00 00 00  1c 00 00 00 01 3e c8 00  |...B.........>..|
-    00000030  00 00 d2 00 00 00 dc 00  00 00 e6 00 00 00 f0 00  |................|
-    00000040  00 00 fa 00 00 00 04 01  00 00 0e 01 00 00 18 01  |................|
-    00000050  00 00 22 01 00 00 2c 01  00 00 36 01 00 00 40 01  |.."...,...6...@.|
-    00000060  00 00 45 01 00 00 4a 01  00 00 54 01 00 00 5e 01  |..E...J...T...^.|
-    00000070  00 00 68 01 00 00 72 01  00 00 7c 01 00 00 86 01  |..h...r...|.....|
-    00000080  00 00 90 01 00 00 a4 01  00 00 b8 01 00 00 ba 01  |................|
-    00000090  00 00 cc 01 00 00 e0 01  00 00 f4 01 00 00 02 02  |................|
-    000000a0  00 00 08 02 00 00 1c 02  00 00 30 02 00 00 44 02  |..........0...D.|
-    000000b0  00 00 58 02 00 00 6c 02  00 00 79 02 00 00 80 02  |..X...l...y.....|
-    000000c0  00 00 94 02 00 00 a8 02  00 00 bc 02 00 00 d0 02  |................|
-    000000d0  00 00 e4 02 00 00 f8 02  00 00 0c 03 00 00 20 03  |.............. .|
-    000000e0  00 00 34 03 00 00 48 03  00 00 52 03 00 00 5c 03  |..4...H...R...\.|
-    000000f0  00 00 70 03 00 00 84 03  00 00 98 03 00 00 ac 03  |..p.............|
-    00000100  00 00 c0 03 00 00 d4 03  00 00 e8 03 00 00 fc 03  |................|
-    00000110  00 00 10 04 00 00 24 04  00 00 28 04 00 00 38 04  |......$...(...8.|
-    00000120  00 00 4c 04 00 00 01 3e  02 02 02 02 02 02 02 02  |..L....>........|
-    00000130  02 02 02 02 02 01 02 02  02 02 02 02 02 02 02 02  |................|
-    00000140  01 02 02 02 01 02 02 02  02 02 02 01 02 02 02 02  |................|
-    00000150  02 02 02 02 02 02 02 01  02 02 02 02 02 02 02 02  |................|
-    00000160  02 02 02 01 02 02 01 3e  46 25 f5 3d 24 28 fe 3d  |.......>F%.=$(.=|
-    00000170  ee eb 00 3e 14 3f 06 3e  a7 e8 08 3e ee eb 00 3e  |...>.?.>...>...>|
-    00000180  d6 56 ec 3d f2 d2 cd 3d  ce aa cf 3d 1e a7 e8 3d  |.V.=...=...=...=|
-    00000190  a5 bd 01 3e 02 2b 07 3e  83 c0 0a 3e 04 56 0e 3e  |...>.+.>...>.V.>|
-    000001a0  bc 05 12 3e 2b 18 15 3e  cf 66 15 3e 86 c9 14 3e  |...>+..>.f.>...>|
-    000001b0  19 04 16 3e 9b 55 1f 3e  0d 71 2c 3e c6 dc 35 3e  |...>.U.>.q,>..5>|
-    000001c0  cb 10 47 3e 74 b5 55 3e  3d 0a 57 3e 78 9c 62 3e  |..G>t.U>=.W>x.b>|
-    000001d0  c4 b1 6e 3e 12 a5 7d 3e  81 95 83 3e ef 38 85 3e  |..n>..}>...>.8.>|
-    000001e0  55 30 8a 3e b2 9d 8f 3e  06 81 95 3e 75 02 9a 3e  |U0.>...>...>u..>|
-    000001f0  ae d8 9f 3e 0a d7 a3 3e  e6 ae a5 3e 03 09 aa 3e  |...>...>...>...>|
-    00000200  0e 4f af 3e 21 b0 b2 3e  07 5f b8 3e ff 21 bd 3e  |.O.>!..>._.>.!.>|
-    00000210  f7 e4 c1 3e c2 86 c7 3e  b1 50 cb 3e 97 90 cf 3e  |...>...>.P.>...>|
-    00000220  4f af d4 3e 3d 0a d7 3e  9a 99 d9 3e 49 2e df 3e  |O..>=..>...>I..>|
-    00000230  14 d0 e4 3e f9 0f e9 3e  d6 c5 ed 3e c5 fe f2 3e  |...>...>...>...>|
-    00000240  45 d8 f0 3e 79 58 e8 3e  d7 12 d2 3e 71 1b ad 3e  |E..>yX.>...>q..>|
-    00000250  10 7a 76 3e 42 60 65 3e  57 ec 2f 3e d9 3d f9 3d  |.zv>B`e>W./>.=.=|
-    00000260  01 3e 00 00 80 3f 00 00  80 3f 00 00 80 3f 00 00  |.>...?...?...?..|
-    00000270  80 3f 00 00 80 3f 00 00  80 3f 00 00 80 3f 00 00  |.?...?...?...?..|
-    *
-    00000350  80 3f 00 00 80 3f 00 00  80 3f 00 01 00 01 00 00  |.?...?...?......|
-    00000360  00 61 bd 00 00 00 ff ff  ff ff ff ff ff ff ff ff  |.a..............|
-    00000370  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
-    *
-    00001000
-    
-    """
-
-    if 0:
-        print("")
-        hexdump(buff)
-        print("")
-    """
-    $ hexdump -C s10_0338h03.bin |head -n 2
-    00000000  19 30 00 00 6d 01 00 00  01 00 00 00 00 00 00 c8  |.0..m...........|
-    00000010  42 00 00 00 00 1c 00 00  00 01 3e c8 00 00 00 d2  |B.........>.....|
-    $ hexdump -C op-2-vis_219708.bin |head -n 2
-    00000000  1d 32 00 00 6d 01 00 00  01 00 00 00 00 00 00 80  |.2..m...........|
-    00000010  3f 00 00 00 00 10 00 00  00 01 2d 90 01 00 00 95  |?.........-.....|
-    $ hexdump -C op-2-ir_22045.bin |head -n 2
-    00000000  24 32 00 00 6d 01 00 00  01 00 00 00 00 00 00 00  |$2..m...........|
-    00000010  00 00 00 00 00 04 00 00  00 01 1e 20 03 00 00 34  |........... ...4|
-    $ hexdump -C op-2-vis_0158k12r.bin |head -n 2
-    00000000  29 3d 00 00 6d 01 00 00  01 00 00 00 00 00 00 80  |)=..m...........|
-    00000010  3f 00 00 00 00 10 00 00  00 01 2d 90 01 00 00 95  |?.........-.....|
-    """
-
-    # print("val 0x00:", peek_u32(buff, 0x00), "/", hex(peek_u32(buff, 0x00)))
-    # assert peek_u32(buff, 0x04) == 0x016D
-    assert peek_u32(buff, 0x08) == 1
-    assert peek_u8(buff, 0x0C) == 0
-    assert peek_u8(buff, 0x0D) == 0
-    assert peek_u8(buff, 0x0E) == 0
-    """
-    ++ ./decode_jsa.py eeprom/jsa/op-2-vis_0158k12r.bin
-    val 0x15 16
-    ++ ./decode_jsa.py eeprom/jsa/op-2-ir_22045.bin
-    val 0x15 4
-    ++ ./decode_jsa.py eeprom/jsa/s10_0338h03.bin
-    val 0x15 28
-    ++ ./decode_jsa.py eeprom/jsa/op-2-vis_219708.bin
-    val 0x15 16
-    """
-    print("val 0x15:", peek_u8(buff, 0x15))
-    assert peek_u8(buff, 0x19) == 1
-
-    # 200 to 1100 nm
-    # 62 values => 3e
-    # value just before this table
-    # buff = bytearray(open(fn_in, "rb").read())
-    # 0x2D => 0x1A
-    ncal = buff[0x1A]
-    # print("entries", ncal)
     nms = []
-    buff = buff[0x1B:]
-    # print("nms")
     for _cali in range(ncal):
-        nm, x1 = read_struct(buff, "<HH")
-        assert x1 == 0
-        # print("  ", nm)
-        nms.append(nm)
+        nms.append(read_struct(buff, "<I")[0])
 
     val_a = read_u8(buff)
     assert val_a == 1, val_a
     ncal2 = read_u8(buff)
     assert ncal2 == ncal, ncal2
 
-    # print("second")
     val2s = []
     for _cali in range(ncal):
         val2 = read_u8(buff)
-        """
-        s10_0338h03.bin: 1 or 2
-        op-2-ir_22045.bin: always 1
-        op-2-vis_0158k12r.bin: always 1
-        op-2-vis_219708.bin: always 1
-        """
         assert val2 in (1, 2)
-        # print("  ", val2)
         val2s.append(val2)
 
     val_c = read_u8(buff)
@@ -438,11 +365,6 @@ def decode_multi(fn_in, buff):
     for _cali in range(ncal):
         # val3 = read_u32(buff)
         val3 = read_f(buff)
-        """
-        Most sets this is below 0.5
-        op-2-ir_22045.bin however has some values approaching 1.0
-        """
-        assert 0.0 < val3 < 1.0
         # print("  ", val3)
         val3s.append(val3)
         # print(hex(val3))
@@ -462,52 +384,82 @@ def decode_multi(fn_in, buff):
 
         val4 = read_f(buff)
         val4s.append(val4)
-        # print(val4)
-    """
-    ++ ./decode_jsa.py eeprom/jsa/op-2-vis_0158k12r.bin
-    XXX00000000  00 01 00 01 00 00 00 3B  C6 00 00                 |.......;...     |
-    ++ ./decode_jsa.py eeprom/jsa/op-2-ir_22045.bin
-    XXX00000000  00 01 00 01 00 00 00 AB  68 00 00                 |........h..     |
-    ++ ./decode_jsa.py eeprom/jsa/s10_0338h03.bin
-    XXX00000000  00 01 00 01 00 00 00 61  BD 00 00                 |.......a...     |
-    ++ ./decode_jsa.py eeprom/jsa/op-2-vis_219708.bin
-    XXX00000000  00 01 00 01 00 00 00 EB  CA 00 00                 |...........     |
-    """
-    # print("remain end", len(buff))
-    assert len(buff) == 11
 
-    assert read_u8(buff) == 0x00
-    assert read_u8(buff) == 0x01
-    assert read_u8(buff) == 0x00
-    assert read_u8(buff) == 0x01
-    assert read_u8(buff) == 0x00
-    assert read_u8(buff) == 0x00
-    assert read_u8(buff) == 0x00
-    """
-    ++ ./decode_jsa.py eeprom/jsa/op-2-vis_0158k12r.bin
-    val F 50747
-    ++ ./decode_jsa.py eeprom/jsa/op-2-ir_22045.bin
-    val F 26795
-    ++ ./decode_jsa.py eeprom/jsa/s10_0338h03.bin
-    val F 48481
-    ++ ./decode_jsa.py eeprom/jsa/op-2-vis_219708.bin
-    val F 51947
-
-    >>> struct.unpack("<f", b"\x00\x00\x3B\xC6")
-    (-11968.0,)
-    >>> struct.unpack("<f", b"\x00\x3B\xC6\x00")
-    (1.8204593451287422e-38,)
-    >>> struct.unpack("<f", b"\x3B\xC6\x00\x00")
-    (7.111169316909149e-41,)
-    """
-
-    valf = read_u16(buff)
-    print("val F:", valf, "/", hex(valf))
-    assert read_u16(buff) == 0
-
-    print("table (%s)" % ncal)
+    ret = []
     for nm, val2, val3, val4 in zip(nms, val2s, val3s, val4s):
+        ret.append((nm, val2, val3, val4))
+    return ret
+
+
+def decode_semi_multi(buff, verbose=False):
+    def read_prefix():
+        # Table header: 18 bytes
+        # s0 = len(buff)
+    
+        """
+        s10_0338h03.bin
+        00000000  01 00 00 00 00 00 00 C8  42 00 00 00 00 1C 00 00  |........B.......|
+        00000010  00 01
+    
+        op-2-ir_22045.bin
+        00000000  01 00 00 00 00 00 00 00  00 00 00 00 00 04 00 00  |................|
+        00000010  00 01                                             |..              |
+    
+        op-2-vis_0158k12r.bin
+        00000000  01 00 00 00 00 00 00 80  3F 00 00 00 00 10 00 00  |........?.......|
+        00000010  00 01                                             |..              |
+    
+        op-2-vis_219708.bin
+        00000000  01 00 00 00 00 00 00 80  3F 00 00 00 00 10 00 00  |........?.......|
+        00000010  00 01                                             |..              |
+        """
+        verbose and hexdump(buff[0:14])
+    
+        assert read_u16(buff) == 0
+        assert read_u8(buff) == 0
+    
+        read_debug_u16(buff, "multi-prefix-3")
+        assert read_u32(buff) == 0
+        read_debug_u32(buff, "multi-prefix-5")
+        assert read_u8(buff) == 1
+    
+        # print("multi1: consumed %u bytes" % (s0 - len(buff)))
+
+    def read_postfix():
+        """
+        ++ ./decode_jsa.py eeprom/jsa/op-2-vis_0158k12r.bin
+        XXX00000000  00 01 00 01 00 00 00 3B  C6 00 00                 |.......;...     |
+        ++ ./decode_jsa.py eeprom/jsa/op-2-ir_22045.bin
+        XXX00000000  00 01 00 01 00 00 00 AB  68 00 00                 |........h..     |
+        ++ ./decode_jsa.py eeprom/jsa/s10_0338h03.bin
+        XXX00000000  00 01 00 01 00 00 00 61  BD 00 00                 |.......a...     |
+        ++ ./decode_jsa.py eeprom/jsa/op-2-vis_219708.bin
+        XXX00000000  00 01 00 01 00 00 00 EB  CA 00 00                 |...........     |
+        """
+        # print("remain end", len(buff))
+        assert len(buff) == 11
+    
+        assert read_u8(buff) == 0x00
+        assert read_u8(buff) == 0x01
+        assert read_u8(buff) == 0x00
+        assert read_u8(buff) == 0x01
+        assert read_u8(buff) == 0x00
+        assert read_u8(buff) == 0x00
+        assert read_u8(buff) == 0x00
+        read_debug_u16(buff, "multi-postfix-8")
+        assert read_u16(buff) == 0
+
+    read_prefix()
+    cals = read_multi_tables(buff)
+    read_postfix()
+
+    print("table (%s)" % len(cals))
+    for nm, val2, val3, val4 in cals:
         print("  ", nm, val2, val3, val4)
+        assert 10 < nm < 2000
+        assert 0.0 < val3 < 1.0
+
+
 
 
 def run(fn_in):
@@ -522,15 +474,21 @@ def run(fn_in):
     # print("Bytes: %u" % l)
     # 4 bytes already consumed
     buff = buff[0:l - 4]
-    cal_fmt = read_u8(buff)
+    sensor_type = read_u8(buff)
     """
     2: J25
         not wavelength corrected
     3: OP-2, S10
         wavelength corrected?
     """
-    cal_fmt2str = {2: "SINGLE", 3: "MULTI"}
-    print("Calibration format: %u (%s)" % (cal_fmt, cal_fmt2str[cal_fmt]))
+    cal_fmt2str = {
+        # Pyroelectric
+        # Usually calibrated for single wavelength
+        2: "PYRO",
+        # Semiconductor
+        # Usually calibrated for a range of wavelengths
+        3: "SEMI"}
+    print("Sensor type: %u (%s)" % (sensor_type, cal_fmt2str[sensor_type]))
     model = read_str(buff)
     print("Model: %s" % model)
     print("S/N: %s" % read_str(buff))
@@ -538,28 +496,41 @@ def run(fn_in):
     # ''
     # '0'
     # '1027011'
-    print("Something: ", read_str(buff))
+    print("A string: ", read_str(buff))
     # Seems remainder is fixed size
     # print("Remain", len(buff))
     # open("buff.bin", "wb").write(buff)
 
-    cal_days_1970 = peek_u32(buff, 0x00)
+    cal_days_1970 = read_u32(buff)
     cal_dt = datetime.datetime(1970, 1,
                                1) + datetime.timedelta(days=cal_days_1970)
     print("Cal date", cal_dt.strftime('%Y-%m-%d'))
     # 0x16D => 365
     # hmm date related? Expiration days?
-    cal_due_days = peek_u32(buff, 0x04)
+    cal_due_days = read_u32(buff)
     assert cal_due_days == 0x016D
     cal_due_dt = cal_dt + datetime.timedelta(days=cal_due_days)
     print("Cal due", cal_due_dt.strftime('%Y-%m-%d'))
 
-    if cal_fmt == 2:
-        decode_single(buff)
-    elif cal_fmt == 3:
-        decode_multi(fn_in, buff)
+    const23 = read_debug_u32(buff, "const23")
+
+    # multi1 and multi2 seem to have different header/footer structures
+    # ex: a float that clearly decodes in one doesn't in the other
+    # however data representation is similar in how they store tables and such
+
+    # Sensor type 2
+    if sensor_type == 2:
+        assert const23 == 2
+        if model == "J-25MB-HE":
+            decode_pyro_multi(buff)
+        else:
+            decode_pyro_single(buff)
+    elif sensor_type == 3:
+        assert const23 == 1
+        decode_semi_multi(buff)
     else:
-        assert 0, cal_fmt
+        assert 0, sensor_type
+    assert len(buff) == 0
 
 
 def main():

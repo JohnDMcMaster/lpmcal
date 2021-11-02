@@ -124,40 +124,11 @@ def run(fn_in):
     print("Part number: %s" % read_str_buff(buff, 13))
 
 
-    read_debug_unk32(buff, "A")
-    read_debug_unk32(buff, "B")
-    read_debug_unk32(buff, "C")
-    read_debug_unk32(buff, "D")
-    read_debug_unk32(buff, "E")
-    read_debug_unk32(buff, "F")
-    read_debug_unk32(buff, "G")
-    read_debug_unk32(buff, "H")
-    read_debug_unk32(buff, "I")
-    read_debug_unk32(buff, "J")
-    print("thing: %u" % read_u8(buff))
-    read_debug_unk32(buff, "K")
-    read_debug_unk32(buff, "L")
-    read_debug_unk32(buff, "M")
-
-    print('loop')
-
-    for i in range(5):
-        read_debug_unk32(buff, "M")
-
-    print('loop')
-
-    for i in range(8):
-        read_debug_unk32(buff, "M")
-
-    print('loop')
-
-    for i in range(8):
-        read_debug_unk32(buff, "M")
-
-    print('loop')
-
-    for i in range(6):
-        read_debug_unk32(buff, "M")
+    for i in range(10):
+        read_debug_unk32(buff, "loop1-0x%02X" % i)
+    print("Some u8: %u" % read_u8(buff))
+    for i in range(30):
+        read_debug_unk32(buff, "loop2-0x%02X" % i)
 
     assert len(buff) == 0
 
