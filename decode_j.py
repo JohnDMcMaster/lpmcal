@@ -52,10 +52,12 @@ def read_debug_unk32(buff, label):
     print(label + ":", u32, "/", hex(u32), "/", f)
     return u32
 
+
 def read_debug_u8(buff, label):
     u8 = read_u8(buff)
     print(label + ":", u8, "/", hex(u8))
     return u8
+
 
 def read_debug_u16(buff, label):
     u16 = read_u16(buff)
@@ -71,6 +73,12 @@ def read_debug_u32(buff, label):
 
 def read_debug_f(buff, label):
     f = read_f(buff)
+    print(label + ":", f)
+    return f
+
+
+def peek_debug_f(buff, label):
+    f = peek_f(buff, 0)
     print(label + ":", f)
     return f
 
@@ -111,17 +119,18 @@ def float_test(fn_in):
         print("%f" % struct.unpack("<d", buff[0:8])[0])
         print("%f" % struct.unpack(">d", buff[0:8])[0])
 
+
 def decode_pyro_single_prefix(buff, verbose=False):
     """
     Think this is shared structure but not sure
     """
 
+    verbose and print("prefix")
     verbose and hexdump(buff[0:38 + 16 + 4])
 
-    verbose and print("prefix")
-
-    read_debug_f(buff, "sprefix-0")
-
+    read_debug_u16(buff, "sprefix-AA1")
+    # 72FC
+    assert read_debug_u16(buff, "sprefix-AA2")
     """
     eeprom/jsa/j-25mb-he_0984e07r.bin
     sprefix-A: 0.0005000000237487257
@@ -139,6 +148,9 @@ def decode_pyro_single_prefix(buff, verbose=False):
     sprefix-G: 24.0
     sprefix-F: 100.0
     """
+    # Tricky
+    # Sometimes a reasonable float like 0.0005, sometimes large constant
+    # Might need more special casing
     # float, 0.0005
     read_debug_f(buff, "sprefix-A")
     # Probalby float
@@ -148,7 +160,6 @@ def decode_pyro_single_prefix(buff, verbose=False):
     # Probalby float
     read_debug_f(buff, "sprefix-D")
 
-
     assert read_u32(buff) == 0
     assert read_u32(buff) == 0
     # 22.3
@@ -156,7 +167,6 @@ def decode_pyro_single_prefix(buff, verbose=False):
 
     assert read_debug_f(buff, "sprefix-F") == 100.0
     assert read_u16(buff) == 0
-
     """
     eeprom/jsa/j25lp-3a-050_0946e07.bin
     sprefix-12: 16256 / 0x3f80
@@ -192,12 +202,12 @@ def decode_pyro_single_prefix(buff, verbose=False):
     read_debug_u32(buff, "sprefix-16")
     assert read_u8(buff) == 1
 
+
 def decode_pyro_single_postfix(buff, verbose=False):
     verbose and print("remain end", len(buff))
     assert len(buff) == 15
 
     verbose and hexdump(buff)
-
     """
     00000000  00 01 00 01 00 00 00 00  00 80 3F 1C B0 00 00     |..........?.... |
     00000000  00 01 00 01 00 00 00 00  00 80 3F D5 14 00 00     |..........?.... |
@@ -262,42 +272,45 @@ def decode_pyro_single(buff, verbose=False):
     
     hmm
     """
-
     def decode_main():
         assert read_u8(buff) == 1
-    
+
         # Roughly this is where previous tables end
         # lets check before here
-    
+
         # print("single: consumed %u bytes" % (s0 - len(buff)))
-    
+
         nm = read_u16(buff)
         print("nm:", nm)
-    
+
         assert read_u8(buff) == 0
         assert read_u8(buff) == 0
         assert read_u8(buff) == 1
-    
+
         assert read_u8(buff) == 1
         assert read_u8(buff) == 1
         assert read_u8(buff) == 1
         assert read_u8(buff) == 1
-    
+
         # ****
         # this is the main response value
         valk = read_f(buff)
         print("Probe Resp:", valk, "V/J")
-    
+
         assert read_u8(buff) == 1
         assert read_u8(buff) == 1
-        read_debug_unk32(buff, "val L")
+
+        # read_debug_unk32(buff, "pyro misc")
+        read_debug_u16(buff, "pyro misc1")
+        # 72FC
+        read_debug_u16(buff, "pyro misc2")
 
     decode_pyro_single_prefix(buff, verbose=verbose)
     decode_main()
     decode_pyro_single_postfix(buff, verbose=verbose)
 
 
-def decode_pyro_multi(buff):
+def decode_pyro_multi(buff, verbose=False):
     """
     Table header: 62 bytes
     This is way bigger than multi1
@@ -319,7 +332,7 @@ def decode_pyro_multi(buff):
     decode_pyro_single_prefix(buff)
     cals = read_multi_tables(buff)
     decode_pyro_single_postfix(buff)
-    
+
     print("table (%s)" % len(cals))
     for nm, val2, val3, val4 in cals:
         print("  ", nm, val2, val3, val4)
@@ -395,7 +408,6 @@ def decode_semi_multi(buff, verbose=False):
     def read_prefix():
         # Table header: 18 bytes
         # s0 = len(buff)
-    
         """
         s10_0338h03.bin
         00000000  01 00 00 00 00 00 00 C8  42 00 00 00 00 1C 00 00  |........B.......|
@@ -414,15 +426,15 @@ def decode_semi_multi(buff, verbose=False):
         00000010  00 01                                             |..              |
         """
         verbose and hexdump(buff[0:14])
-    
+
         assert read_u16(buff) == 0
         assert read_u8(buff) == 0
-    
+
         read_debug_u16(buff, "multi-prefix-3")
         assert read_u32(buff) == 0
         read_debug_u32(buff, "multi-prefix-5")
         assert read_u8(buff) == 1
-    
+
         # print("multi1: consumed %u bytes" % (s0 - len(buff)))
 
     def read_postfix():
@@ -438,7 +450,7 @@ def decode_semi_multi(buff, verbose=False):
         """
         # print("remain end", len(buff))
         assert len(buff) == 11
-    
+
         assert read_u8(buff) == 0x00
         assert read_u8(buff) == 0x01
         assert read_u8(buff) == 0x00
@@ -460,9 +472,7 @@ def decode_semi_multi(buff, verbose=False):
         assert 0.0 < val3 < 1.0
 
 
-
-
-def run(fn_in):
+def run(fn_in, verbose=False):
     print("")
     print("Reading", fn_in)
     if 0:
@@ -487,7 +497,8 @@ def run(fn_in):
         2: "PYRO",
         # Semiconductor
         # Usually calibrated for a range of wavelengths
-        3: "SEMI"}
+        3: "SEMI"
+    }
     print("Sensor type: %u (%s)" % (sensor_type, cal_fmt2str[sensor_type]))
     model = read_str(buff)
     print("Model: %s" % model)
@@ -522,12 +533,12 @@ def run(fn_in):
     if sensor_type == 2:
         assert const23 == 2
         if model == "J-25MB-HE":
-            decode_pyro_multi(buff)
+            decode_pyro_multi(buff, verbose=verbose)
         else:
-            decode_pyro_single(buff)
+            decode_pyro_single(buff, verbose=verbose)
     elif sensor_type == 3:
         assert const23 == 1
-        decode_semi_multi(buff)
+        decode_semi_multi(buff, verbose=verbose)
     else:
         assert 0, sensor_type
     assert len(buff) == 0
@@ -535,9 +546,10 @@ def run(fn_in):
 
 def main():
     parser = argparse.ArgumentParser(description='Decode')
+    parser.add_argument('--verbose', action="store_true")
     parser.add_argument('fn_in', help='File name in')
     args = parser.parse_args()
-    run(fn_in=args.fn_in)
+    run(fn_in=args.fn_in, verbose=args.verbose)
 
 
 if __name__ == "__main__":

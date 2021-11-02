@@ -95,7 +95,6 @@ def run(fn_in):
     buff = bytearray(open(fn_in, "rb").read())
     # Fixed size structure
     buff = buff[0:0xC8]
-
     """
     eeprom/lm/lm-100-qd-hd_j465.bin
     
@@ -123,7 +122,6 @@ def run(fn_in):
     print("Model number: %s" % read_str_buff(buff, 17))
     print("Part number: %s" % read_str_buff(buff, 13))
 
-
     for i in range(10):
         read_debug_unk32(buff, "loop1-0x%02X" % i)
     print("Some u8: %u" % read_u8(buff))
@@ -132,11 +130,13 @@ def run(fn_in):
 
     assert len(buff) == 0
 
+
 def main():
     parser = argparse.ArgumentParser(description='Decode')
     parser.add_argument('fn_in', help='File name in')
     args = parser.parse_args()
     run(fn_in=args.fn_in)
+
 
 if __name__ == "__main__":
     main()
