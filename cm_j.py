@@ -20,24 +20,6 @@ def read_str(buff):
     return ret
 
 
-def float_test(fn_in):
-    # ./decode_j25.py j25lp-4_0437e03.bin |grep 828
-    # nope
-
-    for i in range(0x100):
-        print("")
-        print(i)
-        buff = bytearray(open(fn_in, "rb").read())
-
-        buff = buff[i:]
-        print("%f" % struct.unpack("<e", buff[0:2])[0])
-        print("%f" % struct.unpack(">e", buff[0:2])[0])
-        print("%f" % struct.unpack("<f", buff[0:4])[0])
-        print("%f" % struct.unpack(">f", buff[0:4])[0])
-        print("%f" % struct.unpack("<d", buff[0:8])[0])
-        print("%f" % struct.unpack(">d", buff[0:8])[0])
-
-
 def decode_pyro_prefix(buff, verbose=False):
     """
     Think this is shared structure but not sure

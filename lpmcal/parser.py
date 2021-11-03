@@ -17,6 +17,12 @@ def peek_f(buff, off):
     return struct.unpack("<f", buff[off:off + 4])[0]
 
 
+def read_buff(buff, n):
+    ret = buff[0:n]
+    del buff[0:n]
+    return ret
+
+
 def read_u8(buff):
     ret = buff[0]
     del buff[0]
@@ -41,32 +47,32 @@ def read_f(buff):
     return ret
 
 
-def read_debug_unk32(buff, label):
+def read_debug_unk32(buff, label="unknown"):
     f = peek_f(buff, 0)
     u32 = read_u32(buff)
     print(label + ":", u32, "/", hex(u32), "/", f)
     return u32
 
 
-def read_debug_u8(buff, label):
+def read_debug_u8(buff, label="unknown"):
     u8 = read_u8(buff)
     print(label + ":", u8, "/", hex(u8))
     return u8
 
 
-def read_debug_u16(buff, label):
+def read_debug_u16(buff, label="unknown"):
     u16 = read_u16(buff)
     print(label + ":", u16, "/", hex(u16))
     return u16
 
 
-def read_debug_u32(buff, label):
+def read_debug_u32(buff, label="unknown"):
     u32 = read_u32(buff)
     print(label + ":", u32, "/", hex(u32))
     return u32
 
 
-def read_debug_f(buff, label):
+def read_debug_f(buff, label="unknown"):
     f = read_f(buff)
     print(label + ":", f)
     return f
