@@ -120,7 +120,7 @@ def float_test(fn_in):
         print("%f" % struct.unpack(">d", buff[0:8])[0])
 
 
-def decode_pyro_single_prefix(buff, verbose=False):
+def decode_pyro_prefix(buff, verbose=False):
     """
     Think this is shared structure but not sure
     """
@@ -128,82 +128,83 @@ def decode_pyro_single_prefix(buff, verbose=False):
     verbose and print("prefix")
     verbose and hexdump(buff[0:38 + 16 + 4])
 
-    read_debug_u16(buff, "sprefix-AA1")
+    read_debug_u16(buff, "pprefix-AA1")
     # 72FC
-    assert read_debug_u16(buff, "sprefix-AA2")
+    assert read_debug_u16(buff, "pprefix-AA2")
     """
     eeprom/jsa/j-25mb-he_0984e07r.bin
-    sprefix-A: 0.0005000000237487257
-    sprefix-B: 4.8000001697801054e-05
-    sprefix-C: 0.00018099999579135329
-    sprefix-D: 9.100000170292333e-05
-    sprefix-G: 22.299999237060547
-    sprefix-F: 100.0
+    pprefix-A: 0.0005000000237487257
+    pprefix-B: 4.8000001697801054e-05
+    pprefix-C: 0.00018099999579135329
+    pprefix-D: 9.100000170292333e-05
+    pprefix-G: 22.299999237060547
+    pprefix-F: 100.0
 
     eeprom/jsa/j25lp-4_0437e03.bin
-    sprefix-A: 0.0
-    sprefix-B: 2.5999999706982635e-05
-    sprefix-C: 0.00017800000205170363
-    sprefix-D: 8.900000102585182e-05
-    sprefix-G: 24.0
-    sprefix-F: 100.0
+    pprefix-A: 0.0
+    pprefix-B: 2.5999999706982635e-05
+    pprefix-C: 0.00017800000205170363
+    pprefix-D: 8.900000102585182e-05
+    pprefix-G: 24.0
+    pprefix-F: 100.0
     """
     # Tricky
     # Sometimes a reasonable float like 0.0005, sometimes large constant
     # Might need more special casing
     # float, 0.0005
-    read_debug_f(buff, "sprefix-A")
+    read_debug_f(buff, "pprefix-A")
     # Probalby float
-    read_debug_f(buff, "sprefix-B")
+    read_debug_f(buff, "pprefix-B")
     # Probalby float
-    read_debug_f(buff, "sprefix-C")
+    read_debug_f(buff, "pprefix-C")
     # Probalby float
-    read_debug_f(buff, "sprefix-D")
+    read_debug_f(buff, "pprefix-D")
 
     assert read_u32(buff) == 0
     assert read_u32(buff) == 0
     # 22.3
-    read_debug_f(buff, "sprefix-G")
+    read_debug_f(buff, "pprefix-G")
 
-    assert read_debug_f(buff, "sprefix-F") == 100.0
+    assert read_debug_f(buff, "pprefix-F") == 100.0
     assert read_u16(buff) == 0
     """
     eeprom/jsa/j25lp-3a-050_0946e07.bin
-    sprefix-12: 16256 / 0x3f80
-    sprefix-13: 0 / 0x0 / 0.0
-    sprefix-14: 16672 / 0x4120
-    sprefix-15: 17530 / 0x447a
-    sprefix-16: 0 / 0x0
+    pprefix-12: 16256 / 0x3f80
+    pprefix-13: 0 / 0x0 / 0.0
+    pprefix-14: 16672 / 0x4120
+    pprefix-15: 17530 / 0x447a
+    pprefix-16: 0 / 0x0
 
     eeprom/jsa/j25lp-4_0437e03.bin
-    sprefix-12: 0 / 0x0
-    sprefix-13: 0 / 0x0 / 0.0
-    sprefix-14: 16672 / 0x4120
-    sprefix-15: 17530 / 0x447a
-    sprefix-16: 0 / 0x0
+    pprefix-12: 0 / 0x0
+    pprefix-13: 0 / 0x0 / 0.0
+    pprefix-14: 16672 / 0x4120
+    pprefix-15: 17530 / 0x447a
+    pprefix-16: 0 / 0x0
 
     eeprom/jsa/j-25mb-he_0984e07r.bin
-    sprefix-12: 0 / 0x0
-    sprefix-13: 0 / 0x0 / 0.0
-    sprefix-14: 16672 / 0x4120
-    sprefix-15: 0 / 0x0
-    sprefix-16: 10 / 0xa
+    pprefix-12: 0 / 0x0
+    pprefix-13: 0 / 0x0 / 0.0
+    pprefix-14: 16672 / 0x4120
+    pprefix-15: 0 / 0x0
+    pprefix-16: 10 / 0xa
     """
 
     assert read_u8(buff) == 0
     # Sometimes 0, sometimes value
-    # sprefix-2: 16256 / 0x3f80
-    read_debug_u32(buff, "sprefix-12")
-    assert read_debug_unk32(buff, "sprefix-13") == 0
+    # pprefix-2: 16256 / 0x3f80
+    read_debug_u32(buff, "pprefix-12")
+    assert read_debug_unk32(buff, "pprefix-13") == 0
 
-    assert read_debug_u32(buff, "sprefix-14") == 0x4120
+    assert read_debug_u32(buff, "pprefix-14") == 0x4120
     # observed: 0, large value
-    read_debug_u16(buff, "sprefix-15")
-    read_debug_u32(buff, "sprefix-16")
+    read_debug_u16(buff, "pprefix-15")
+    # Possibly flags related to whether cal table vs single value follows
+    read_debug_u32(buff, "pprefix-16")
     assert read_u8(buff) == 1
 
 
-def decode_pyro_single_postfix(buff, verbose=False):
+def decode_pyro_postfix(buff, verbose=False):
     verbose and print("remain end", len(buff))
     assert len(buff) == 15
 
@@ -222,8 +223,8 @@ def decode_pyro_single_postfix(buff, verbose=False):
     assert read_u8(buff) == 0x00
 
     assert read_u16(buff) == 0
-    read_debug_u16(buff, "spostfix 8")
-    read_debug_u16(buff, "spostfix 9")
+    read_debug_u16(buff, "ppostfix 8")
+    read_debug_u16(buff, "ppostfix 9")
     assert read_u16(buff) == 0
 
 
@@ -305,9 +306,9 @@ def decode_pyro_single(buff, verbose=False):
         # 72FC
         read_debug_u16(buff, "pyro misc2")
 
-    decode_pyro_single_prefix(buff, verbose=verbose)
+    decode_pyro_prefix(buff, verbose=verbose)
     decode_main()
-    decode_pyro_single_postfix(buff, verbose=verbose)
+    decode_pyro_postfix(buff, verbose=verbose)
 
 
 def decode_pyro_multi(buff, verbose=False):
@@ -329,9 +330,9 @@ def decode_pyro_multi(buff, verbose=False):
 
     # s0 = len(buff)
 
-    decode_pyro_single_prefix(buff)
+    decode_pyro_prefix(buff)
     cals = read_multi_tables(buff)
-    decode_pyro_single_postfix(buff)
+    decode_pyro_postfix(buff)
 
     print("table (%s)" % len(cals))
     for nm, val2, val3, val4 in cals:
@@ -430,9 +431,9 @@ def decode_semi_multi(buff, verbose=False):
         assert read_u16(buff) == 0
         assert read_u8(buff) == 0
 
-        read_debug_u16(buff, "multi-prefix-3")
+        read_debug_u16(buff, "sprefix-3")
         assert read_u32(buff) == 0
-        read_debug_u32(buff, "multi-prefix-5")
+        read_debug_u32(buff, "sprefix-5")
         assert read_u8(buff) == 1
 
         # print("multi1: consumed %u bytes" % (s0 - len(buff)))
@@ -458,7 +459,7 @@ def decode_semi_multi(buff, verbose=False):
         assert read_u8(buff) == 0x00
         assert read_u8(buff) == 0x00
         assert read_u8(buff) == 0x00
-        read_debug_u16(buff, "multi-postfix-8")
+        read_debug_u16(buff, "spostfix-8")
         assert read_u16(buff) == 0
 
     read_prefix()
