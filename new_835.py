@@ -233,7 +233,6 @@ def decode_a6(buff, verbose=False):
     read_debug_u16(buff)
 
 
-
 def run(fn_in, verbose=False):
     print("")
     print("Reading", fn_in)
