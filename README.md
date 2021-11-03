@@ -1,4 +1,4 @@
-# molectron
+# lpmcal
 Laser power meter (LPM) calibration EEPROM tools
 
 Mostly me just tinkering with Coherent/Molectron sensors to see if I could easily recalibrate them.
