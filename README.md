@@ -12,3 +12,5 @@ That said:
 * Coherent/Molectron PM: placeholder, but no work done
 * Newport 835: unstable
     * Some interest as someone reverse engineered this already and I have several 835 meters
+
+See also: https://microwiki.org/wiki/index.php/Molectron
