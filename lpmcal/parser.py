@@ -113,6 +113,7 @@ def read_debug_fle(buff, label="unknown"):
     print(label + ":", f)
     return f
 
+
 def read_debug_u16be(buff, label="unknown"):
     u16 = read_u16be(buff)
     print(label + ":", u16, "/", "0x%04X" % u16)

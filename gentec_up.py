@@ -13,13 +13,16 @@ def read_pad(buff, pad, n):
     for _i in range(n):
         assert read_u8(buff) == pad
 
+
 def read_expect(buff, want):
     got = read_byte_buff(buff, len(want))
     assert want == got
 
+
 def read_unk_buff(buff, n):
     got = read_byte_buff(buff, n)
     hexdump(got)
+
 
 def unhex(s):
     return binascii.unhexlify(s.replace(" ", ""))
@@ -54,14 +57,14 @@ def run(fn_in, version=None, verbose=False):
         print("  ", read_fle(buff))
     read_expect(buff, unhex("28 04 00 00"))
     read_expect(buff, unhex("cc" * 24))
-    
+
     read_debug_fle(buff, "M")
     read_debug_fle(buff, "N")
     read_debug_u16le(buff, "O")
     read_expect(buff, unhex("01 00 07 00 01 00 00 00"))
 
     read_pad(buff, 0xCC, 20)
-    
+
     read_debug_unk32le(buff, "P")
     print("Table")
     for _i in range(10):

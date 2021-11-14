@@ -30,7 +30,6 @@ from lpmcal.util import tostr
 def run(fn_in, verbose=False):
     print("")
     print("Reading", fn_in)
-
     """
     00000000  00 00 00 00 d0 e8 00 58  00 0c 00 00 e4 d8 e4 d4  |.......X........|
     00000010  00 c0 00 00 00 00 00 00  00 00 fe 00 00 4a e0 48  |.............J.H|
@@ -57,7 +56,7 @@ def run(fn_in, verbose=False):
             # buff = buff[0x5C + ii:]
             buff = buff[0xC6 + ii:]
             hexdump(buff)
-        
+
             for i in range(10):
                 print("")
                 print(i)
@@ -69,15 +68,14 @@ def run(fn_in, verbose=False):
     # As signed: -438 to -776
     if 0:
         buff = bytearray(open(fn_in, "rb").read())
-        buff = buff[0x5C+2:]
+        buff = buff[0x5C + 2:]
         hexdump(buff)
-    
+
         for i in range(10):
             print("")
             print(i)
             read_debug_u16sbe(buff)
             read_debug_u16sbe(buff)
-
 
     if 1:
         buff = bytearray(open(fn_in, "rb").read())
