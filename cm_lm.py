@@ -55,10 +55,10 @@ def run(fn_in):
     print("Part number: %s" % read_str_buff(buff, 13))
 
     for i in range(10):
-        read_debug_unk32(buff, "loop1-0x%02X" % i)
+        read_debug_unk32le(buff, "loop1-0x%02X" % i)
     print("Some u8: %u" % read_u8(buff))
     for i in range(30):
-        read_debug_unk32(buff, "loop2-0x%02X" % i)
+        read_debug_unk32le(buff, "loop2-0x%02X" % i)
 
     assert len(buff) == 0
 

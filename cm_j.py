@@ -28,9 +28,9 @@ def decode_pyro_prefix(buff, verbose=False):
     verbose and print("prefix")
     verbose and hexdump(buff[0:38 + 16 + 4])
 
-    read_debug_u16(buff, "pprefix-AA1")
+    read_debug_u16le(buff, "pprefix-AA1")
     # 72FC
-    assert read_debug_u16(buff, "pprefix-AA2")
+    assert read_debug_u16le(buff, "pprefix-AA2")
     """
     eeprom/jsa/j-25mb-he_0984e07r.bin
     pprefix-A: 0.0005000000237487257
@@ -52,21 +52,21 @@ def decode_pyro_prefix(buff, verbose=False):
     # Sometimes a reasonable float like 0.0005, sometimes large constant
     # Might need more special casing
     # float, 0.0005
-    read_debug_f(buff, "pprefix-A")
+    read_debug_fle(buff, "pprefix-A")
     # Probalby float
-    read_debug_f(buff, "pprefix-B")
+    read_debug_fle(buff, "pprefix-B")
     # Probalby float
-    read_debug_f(buff, "pprefix-C")
+    read_debug_fle(buff, "pprefix-C")
     # Probalby float
-    read_debug_f(buff, "pprefix-D")
+    read_debug_fle(buff, "pprefix-D")
 
-    assert read_u32(buff) == 0
-    assert read_u32(buff) == 0
+    assert read_u32le(buff) == 0
+    assert read_u32le(buff) == 0
     # 22.3
-    read_debug_f(buff, "pprefix-G")
+    read_debug_fle(buff, "pprefix-G")
 
-    assert read_debug_f(buff, "pprefix-F") == 100.0
-    assert read_u16(buff) == 0
+    assert read_debug_fle(buff, "pprefix-F") == 100.0
+    assert read_u16le(buff) == 0
     """
     eeprom/jsa/j25lp-3a-050_0946e07.bin
     pprefix-12: 16256 / 0x3f80
@@ -93,14 +93,14 @@ def decode_pyro_prefix(buff, verbose=False):
     assert read_u8(buff) == 0
     # Sometimes 0, sometimes value
     # pprefix-2: 16256 / 0x3f80
-    read_debug_u32(buff, "pprefix-12")
-    assert read_debug_unk32(buff, "pprefix-13") == 0
+    read_debug_u32le(buff, "pprefix-12")
+    assert read_debug_unk32le(buff, "pprefix-13") == 0
 
-    assert read_debug_u32(buff, "pprefix-14") == 0x4120
+    assert read_debug_u32le(buff, "pprefix-14") == 0x4120
     # observed: 0, large value
-    read_debug_u16(buff, "pprefix-15")
+    read_debug_u16le(buff, "pprefix-15")
     # Possibly flags related to whether cal table vs single value follows
-    read_debug_u32(buff, "pprefix-16")
+    read_debug_u32le(buff, "pprefix-16")
     assert read_u8(buff) == 1
 
 
@@ -122,10 +122,10 @@ def decode_pyro_postfix(buff, verbose=False):
     assert read_u8(buff) == 0x00
     assert read_u8(buff) == 0x00
 
-    assert read_u16(buff) == 0
-    read_debug_u16(buff, "ppostfix 8")
-    read_debug_u16(buff, "ppostfix 9")
-    assert read_u16(buff) == 0
+    assert read_u16le(buff) == 0
+    read_debug_u16le(buff, "ppostfix 8")
+    read_debug_u16le(buff, "ppostfix 9")
+    assert read_u16le(buff) == 0
 
 
 def decode_pyro_single(buff, verbose=False):
@@ -181,7 +181,7 @@ def decode_pyro_single(buff, verbose=False):
 
         # print("single: consumed %u bytes" % (s0 - len(buff)))
 
-        nm = read_u16(buff)
+        nm = read_u16le(buff)
         print("nm:", nm)
 
         assert read_u8(buff) == 0
@@ -195,16 +195,16 @@ def decode_pyro_single(buff, verbose=False):
 
         # ****
         # this is the main response value
-        valk = read_f(buff)
+        valk = read_fle(buff)
         print("Probe Resp:", valk, "V/J")
 
         assert read_u8(buff) == 1
         assert read_u8(buff) == 1
 
-        # read_debug_unk32(buff, "pyro misc")
-        read_debug_u16(buff, "pyro misc1")
+        # read_debug_unk32le(buff, "pyro misc")
+        read_debug_u16le(buff, "pyro misc1")
         # 72FC
-        read_debug_u16(buff, "pyro misc2")
+        read_debug_u16le(buff, "pyro misc2")
 
     decode_pyro_prefix(buff, verbose=verbose)
     decode_main()
@@ -270,8 +270,8 @@ def read_multi_tables(buff):
     # print("third")
     val3s = []
     for _cali in range(ncal):
-        # val3 = read_u32(buff)
-        val3 = read_f(buff)
+        # val3 = read_u32le(buff)
+        val3 = read_fle(buff)
         # print("  ", val3)
         val3s.append(val3)
         # print(hex(val3))
@@ -289,7 +289,7 @@ def read_multi_tables(buff):
         # XXX: 1065353216 / 0x3f800000 / 1.0
         # peek_debug_unk32(buff, "XXX")
 
-        val4 = read_f(buff)
+        val4 = read_fle(buff)
         val4s.append(val4)
 
     ret = []
@@ -321,12 +321,12 @@ def decode_semi_multi(buff, verbose=False):
         """
         verbose and hexdump(buff[0:14])
 
-        assert read_u16(buff) == 0
+        assert read_u16le(buff) == 0
         assert read_u8(buff) == 0
 
-        read_debug_u16(buff, "sprefix-3")
-        assert read_u32(buff) == 0
-        read_debug_u32(buff, "sprefix-5")
+        read_debug_u16le(buff, "sprefix-3")
+        assert read_u32le(buff) == 0
+        read_debug_u32le(buff, "sprefix-5")
         assert read_u8(buff) == 1
 
         # print("multi1: consumed %u bytes" % (s0 - len(buff)))
@@ -352,8 +352,8 @@ def decode_semi_multi(buff, verbose=False):
         assert read_u8(buff) == 0x00
         assert read_u8(buff) == 0x00
         assert read_u8(buff) == 0x00
-        read_debug_u16(buff, "spostfix-8")
-        assert read_u16(buff) == 0
+        read_debug_u16le(buff, "spostfix-8")
+        assert read_u16le(buff) == 0
 
     read_prefix()
     cals = read_multi_tables(buff)
@@ -369,12 +369,9 @@ def decode_semi_multi(buff, verbose=False):
 def run(fn_in, verbose=False):
     print("")
     print("Reading", fn_in)
-    if 0:
-        float_test(fn_in)
-        return
 
     buff = bytearray(open(fn_in, "rb").read())
-    l = read_u32(buff)
+    l = read_u32le(buff)
     # print("Bytes: %u" % l)
     # 4 bytes already consumed
     buff = buff[0:l - 4]
@@ -384,6 +381,11 @@ def run(fn_in, verbose=False):
         not wavelength corrected
     3: OP-2, S10
         wavelength corrected?
+
+    Probably:
+    1: Thermopile
+    2: Pyroelectric
+    3: Optical
     """
     cal_fmt2str = {
         # Pyroelectric
@@ -406,18 +408,18 @@ def run(fn_in, verbose=False):
     # print("Remain", len(buff))
     # open("buff.bin", "wb").write(buff)
 
-    cal_days_1970 = read_u32(buff)
+    cal_days_1970 = read_u32le(buff)
     cal_dt = datetime.datetime(1970, 1,
                                1) + datetime.timedelta(days=cal_days_1970)
     print("Cal date", cal_dt.strftime('%Y-%m-%d'))
     # 0x16D => 365
     # hmm date related? Expiration days?
-    cal_due_days = read_u32(buff)
+    cal_due_days = read_u32le(buff)
     assert cal_due_days == 0x016D
     cal_due_dt = cal_dt + datetime.timedelta(days=cal_due_days)
     print("Cal due", cal_due_dt.strftime('%Y-%m-%d'))
 
-    const23 = read_debug_u32(buff, "const23")
+    const23 = read_debug_u32le(buff, "const23")
 
     # multi1 and multi2 seem to have different header/footer structures
     # ex: a float that clearly decodes in one doesn't in the other

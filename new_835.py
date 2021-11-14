@@ -126,9 +126,9 @@ def decode_com(buff, verbose=False):
 
     print("Detector S/N:", led2str(read_buff(buff, 4)))
     print("Attenuator S/N:", led2str(read_buff(buff, 4)))
-    read_debug_u16(buff)
-    read_debug_u16(buff)
-    read_debug_u16(buff)
+    read_debug_u16le(buff)
+    read_debug_u16le(buff)
+    read_debug_u16le(buff)
 
     print("Start:", read_u8(buff) * 10, "nm")
     print("End:", read_u8(buff) * 10, "nm")
@@ -161,7 +161,7 @@ def decode_a5(buff, verbose=False):
     """
 
     decode_com(buff, verbose=verbose)
-    read_debug_u16(buff)
+    read_debug_u16le(buff)
 
     exp_wo_atten = read_u8(buff)
     print("Exponent bias for detector without attenuator:", exp_wo_atten)
@@ -200,8 +200,8 @@ def decode_a6(buff, verbose=False):
 
     decode_com(buff, verbose=verbose)
 
-    read_debug_u16(buff)
-    read_debug_u16(buff)
+    read_debug_u16le(buff)
+    read_debug_u16le(buff)
 
     # ***A5/A6 diverges
     # "typically = 0"
@@ -270,7 +270,7 @@ def decode_a6(buff, verbose=False):
             print("  cs", c1, c2, c3)
         print("  %0.3f" % val)
 
-    read_debug_u16(buff)
+    read_debug_u16le(buff)
 
 
 def run(fn_in, version=None, verbose=False):
